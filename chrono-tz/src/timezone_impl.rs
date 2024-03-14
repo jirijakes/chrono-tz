@@ -422,9 +422,12 @@ impl TimeZone for Tz {
         let index =
             binary_search(0, timespans.len(), |i| timespans.utc_span(i).cmp(timestamp)).unwrap();
 
-        let (change_time, fixed_timespan) = timespans.rest[index - 1];
-
-        Some((DateTime::from_timestamp(change_time, 0)?, TzOffset::new(*self, fixed_timespan)))
+        if index == 0 {
+            None
+        } else {
+            let (change_time, fixed_timespan) = timespans.rest[index - 1];
+            Some((DateTime::from_timestamp(change_time, 0)?, TzOffset::new(*self, fixed_timespan)))
+        }
     }
 
     fn next_offset_change_utc(&self, utc: &NaiveDateTime) -> Option<(DateTime<Utc>, Self::Offset)> {
@@ -433,8 +436,11 @@ impl TimeZone for Tz {
         let index =
             binary_search(0, timespans.len(), |i| timespans.utc_span(i).cmp(timestamp)).unwrap();
 
-        let (change_time, fixed_timespan) = timespans.rest[index];
-
-        Some((DateTime::from_timestamp(change_time, 0)?, TzOffset::new(*self, fixed_timespan)))
+        if index == 0 || index == timespans.rest.len() {
+            None
+        } else {
+            let (change_time, fixed_timespan) = timespans.rest[index];
+            Some((DateTime::from_timestamp(change_time, 0)?, TzOffset::new(*self, fixed_timespan)))
+        }
     }
 }
