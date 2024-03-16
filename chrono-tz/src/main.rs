@@ -15,16 +15,16 @@ fn main() {
     );
     // println!("2. {x:?}");
 
-    let date: DateTime<Tz> = tz
-        .from_local_datetime(
-            &NaiveDateTime::parse_from_str("2024-04-16 05:30:00", "%Y-%m-%d %H:%M:%S").unwrap(),
-        )
-        .single()
-        .unwrap();
+    // let date: DateTime<Tz> = tz
+    //     .from_local_datetime(
+    //         &NaiveDateTime::parse_from_str("2024-04-16 05:30:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+    //     )
+    //     .single()
+    //     .unwrap();
 
     // println!("{:?}", date.offset());
 
-    let x: Option<_> = tz.previous_offset_change(&date);
+    let x: Option<_> = date.next_offset_change();
 
     // let x = tz.offset_from_local_datetime(
     //     &NaiveDateTime::parse_from_str("2023-10-29 02:30:00", "%Y-%m-%d %H:%M:%S").unwrap(),
