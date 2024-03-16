@@ -6,6 +6,8 @@ use chrono::{
     Offset, TimeZone, Utc,
 };
 
+use chrono::offset::{OffsetChange, OffsetChangeUtc};
+
 use crate::binary_search::binary_search;
 use crate::timezones::Tz;
 
@@ -353,48 +355,9 @@ impl TimeZone for Tz {
         )
     }
 
-    // fn next_offset_change(&self, utc: &NaiveDateTime) -> Option<(NaiveDateTime, Self::Offset)> {
-    //     let timestamp = utc.and_utc().timestamp();
-    //     let timespans = self.timespans();
-    //     let index = binary_search(0, timespans.len(), |i| timespans.local_span(i).cmp(timestamp));
-
-    //     println!("{:?}", index);
-
-    //     let x = match index {
-    //         Ok(0) if timespans.len() == 1 => LocalResult::Single(timespans.get(0)),
-    //         Ok(0) if timespans.local_span(1).contains(timestamp) => {
-    //             LocalResult::Ambiguous(timespans.get(0), timespans.get(1))
-    //         }
-    //         Ok(0) => LocalResult::Single(timespans.get(0)),
-    //         Ok(i) if timespans.local_span(i - 1).contains(timestamp) => {
-    //             LocalResult::Ambiguous(timespans.get(i - 1), timespans.get(i))
-    //         }
-    //         Ok(i) if i == timespans.len() - 1 => LocalResult::Single(timespans.get(i)),
-    //         Ok(i) if timespans.local_span(i + 1).contains(timestamp) => {
-    //             LocalResult::Ambiguous(timespans.get(i), timespans.get(i + 1))
-    //         }
-    //         Ok(i) => {
-    // 		let a = self.TT to
-    //             let (x, y) = timespans.rest.get(i).unwrap();
-    //             println!(
-    //                 "{:?} {:?}",
-    //                 y.fix(),
-    //                 &DateTime::from_timestamp(*x, 0).unwrap().naive_utc().checked_add_offset(a.fix())
-    //             );
-    //             LocalResult::Single(timespans.get(i))
-    //         }
-    //         Err(_) => LocalResult::None,
-    //     };
-
-    //     println!("{:?}", x);
-
-    //     // let (x, y) = timespans.rest.get(index - 1)?;
-    //     // println!("{y} {:?}", DateTime::from_timestamp(*x, 0));
-
-    //     // let (x, y) = timespans.rest.get(index)?;
-    //     // println!("{y} {:?}", DateTime::from_timestamp(*x, 0));
-
-    //     None
+    // fn next_offset_change(&self, local: &DateTime<Self>) -> Option<DateTime<Self>> {
+    //     let (utc, offset) = self.next_offset_change_utc(&local.naive_utc())?;
+    //     Some(DateTime::from_naive_utc_and_offset(utc.naive_utc(), offset))
     // }
 
     #[allow(deprecated)]
@@ -413,10 +376,7 @@ impl TimeZone for Tz {
         TzOffset::new(*self, timespans.get(index))
     }
 
-    fn previous_offset_change_utc(
-        &self,
-        utc: &NaiveDateTime,
-    ) -> Option<(DateTime<Utc>, Self::Offset)> {
+    fn previous_offset_change_utc(&self, utc: &NaiveDateTime) -> Option<OffsetChangeUtc<Self>> {
         let timestamp = utc.and_utc().timestamp();
         let timespans = self.timespans();
         let index =
@@ -426,11 +386,14 @@ impl TimeZone for Tz {
             None
         } else {
             let (change_time, fixed_timespan) = timespans.rest[index - 1];
-            Some((DateTime::from_timestamp(change_time, 0)?, TzOffset::new(*self, fixed_timespan)))
+            let change_time = DateTime::from_timestamp(change_time, 0)?;
+            let from = TzOffset::new(*self, timespans.get(index - 1));
+            let to = TzOffset::new(*self, fixed_timespan);
+            Some(OffsetChangeUtc::new(change_time, from, to))
         }
     }
 
-    fn next_offset_change_utc(&self, utc: &NaiveDateTime) -> Option<(DateTime<Utc>, Self::Offset)> {
+    fn next_offset_change_utc(&self, utc: &NaiveDateTime) -> Option<OffsetChangeUtc<Self>> {
         let timestamp = utc.and_utc().timestamp();
         let timespans = self.timespans();
         let index =
@@ -440,7 +403,10 @@ impl TimeZone for Tz {
             None
         } else {
             let (change_time, fixed_timespan) = timespans.rest[index];
-            Some((DateTime::from_timestamp(change_time, 0)?, TzOffset::new(*self, fixed_timespan)))
+            let change_time = DateTime::from_timestamp(change_time, 0)?;
+            let from = TzOffset::new(*self, timespans.get(index));
+            let to = TzOffset::new(*self, fixed_timespan);
+            Some(OffsetChangeUtc::new(change_time, from, to))
         }
     }
 }
